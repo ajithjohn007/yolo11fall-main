@@ -2,13 +2,31 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 import os
+import torch
+from torch.serialization import add_safe_globals
 from .utils import process_frame_detections
 from typing import Dict, Any
 
 class VideoProcessor:
     def __init__(self, model_path: str = "yolo11s-pose.pt"):
         """Initialize the video processor with the YOLO model."""
-        self.model = YOLO(model_path)
+        # Add PoseModel to safe globals for PyTorch 2.6+
+        try:
+            from ultralytics.nn.tasks import PoseModel
+            add_safe_globals([PoseModel])
+        except Exception as e:
+            print(f"Warning: Could not add PoseModel to safe globals: {e}")
+
+        # Try loading the model with different settings
+        try:
+            self.model = YOLO(model_path)
+        except Exception as e:
+            print(f"Warning: Standard loading failed, trying with weights_only=False: {e}")
+            try:
+                # Try loading with weights_only=False
+                self.model = YOLO(model_path, weights_only=False)
+            except Exception as e2:
+                raise RuntimeError(f"Failed to load model: {e2}")
     
     def process_video(self, video_path: str) -> Dict[str, Any]:
         """

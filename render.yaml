@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: fall-detection-api
+    env: docker
+    plan: standard
+    region: ohio
+    healthCheckPath: /api/health
+    healthCheckTimeout: 100
+    buildCommand: docker build -t fall-detection-api .
+    startCommand: docker run -p $PORT:8000 fall-detection-api
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: PORT
+        value: 8000
+    scaling:
+      minInstances: 1
+      maxInstances: 3
+      targetMemoryPercent: 80
+    disk:
+      name: temp
+      mountPath: /app/temp
+      sizeGB: 10
+    autoDeploy: true 
